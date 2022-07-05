@@ -1,14 +1,13 @@
 package borzo
 
 import (
-	"fmt"
 	"go_base_project/app/repositories/borzo"
 	"go_base_project/app/response"
 )
 
 type ShowOrderService struct {
 	OrderID string
-	Repo    borzo.BorzoOrderRepoInterface
+	Repo    borzo.BorzoOrderRepository
 }
 
 func (service ShowOrderService) Do() response.ServiceResponse {
@@ -19,7 +18,6 @@ func (service ShowOrderService) Do() response.ServiceResponse {
 		return response.Service().Error(err.Error(), nil)
 	}
 
-	fmt.Println(data)
 	return response.Service().Success("Ok", data)
 
 }
