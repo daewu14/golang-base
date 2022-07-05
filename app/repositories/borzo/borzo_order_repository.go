@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"go_base_project/app/repositories/borzo/models/order"
-	"go_base_project/app/repositories/borzo/models/reponses"
+	"go_base_project/app/repositories/borzo/models/price"
+	"go_base_project/app/repositories/borzo/models/responses"
 	"go_base_project/app/services/borzo/base"
 	"io"
 )
 
 type BorzoOrderRepoInterface interface {
-	Order(data order.OrderData) (reponses.ResponseDataCreateOrder, error)
-	ShowOrder(orderID string) (reponses.ResponseDataShowOrder, error)
-	Price()
+	Order(data order.OrderData) (responses.ResponseDataCreateOrder, error)
+	ShowOrder(orderID string) (responses.ResponseDataShowOrder, error)
+	Price(data price.DataPrice) (responses.ResponseDataPricing, error)
 	CancelOrder()
 	ListOrder()
 }
@@ -21,39 +22,61 @@ type BorzoOrderRepoInterface interface {
 type BorzoOrderRepository struct {
 }
 
-func (repo BorzoOrderRepository) Order(data order.OrderData) (reponses.ResponseDataCreateOrder, error) {
+func (repo BorzoOrderRepository) Order(data order.OrderData) (responses.ResponseDataCreateOrder, error) {
 
 	call, err := base.BorzoApi{}.Post("api/business/1.1/create-order").Bodys(data).Call()
 
 	if err != nil {
-		return reponses.ResponseDataCreateOrder{}, err
+		return responses.ResponseDataCreateOrder{}, err
 	}
 
 	result, errRa := io.ReadAll(call.Body)
 
 	if errRa != nil {
-		return reponses.ResponseDataCreateOrder{}, errRa
+		return responses.ResponseDataCreateOrder{}, errRa
 	}
 
-	var responseDataCreateOrder reponses.ResponseDataCreateOrder
+	var responseDataCreateOrder responses.ResponseDataCreateOrder
 
 	errUm := json.Unmarshal(result, &responseDataCreateOrder)
 
 	if responseDataCreateOrder.IsSuccessful != true {
 		errorString := bytes.NewBuffer(result).String()
-		return reponses.ResponseDataCreateOrder{}, errors.New(errorString)
+		return responses.ResponseDataCreateOrder{}, errors.New(errorString)
 	}
 
 	if errUm != nil {
-		return reponses.ResponseDataCreateOrder{}, errUm
+		return responses.ResponseDataCreateOrder{}, errUm
 	}
 
 	return responseDataCreateOrder, nil
 }
 
-func (repo BorzoOrderRepository) Price() {
-	//TODO implement me
-	panic("implement me")
+func (repo BorzoOrderRepository) Price(data price.DataPrice) (responses.ResponseDataPricing, error) {
+
+	call, err := base.BorzoApi{}.Post("api/business/1.1/calculate-order").Bodys(data).Call()
+	if err != nil {
+		return responses.ResponseDataPricing{}, err
+	}
+
+	result, errRa := io.ReadAll(call.Body)
+	if errRa != nil {
+		return responses.ResponseDataPricing{}, errRa
+	}
+
+	var responseDataPricing responses.ResponseDataPricing
+	errUm := json.Unmarshal(result, &responseDataPricing)
+	if responseDataPricing.IsSuccessful != true {
+		errorString := bytes.NewBuffer(result).String()
+		return responses.ResponseDataPricing{}, errors.New(errorString)
+	}
+
+	if errUm != nil {
+		return responses.ResponseDataPricing{}, errUm
+	}
+
+	return responseDataPricing, nil
+
 }
 
 func (repo BorzoOrderRepository) CancelOrder() {
@@ -66,7 +89,7 @@ func (repo BorzoOrderRepository) ListOrder() {
 	panic("implement me")
 }
 
-func (repo BorzoOrderRepository) ShowOrder(orderID string) (reponses.ResponseDataShowOrder, error) {
+func (repo BorzoOrderRepository) ShowOrder(orderID string) (responses.ResponseDataShowOrder, error) {
 
 	var params = map[string]string{
 		"order_id": orderID,
@@ -75,26 +98,26 @@ func (repo BorzoOrderRepository) ShowOrder(orderID string) (reponses.ResponseDat
 	call, err := base.BorzoApi{}.Get("api/business/1.1/orders").Params(params).Call()
 
 	if err != nil {
-		return reponses.ResponseDataShowOrder{}, err
+		return responses.ResponseDataShowOrder{}, err
 	}
 
 	result, errRa := io.ReadAll(call.Body)
 
 	if errRa != nil {
-		return reponses.ResponseDataShowOrder{}, errRa
+		return responses.ResponseDataShowOrder{}, errRa
 	}
 
-	var responseData reponses.ResponseDataShowOrder
+	var responseData responses.ResponseDataShowOrder
 
 	errUm := json.Unmarshal(result, &responseData)
 
 	if responseData.IsSuccessful != true {
 		errorString := bytes.NewBuffer(result).String()
-		return reponses.ResponseDataShowOrder{}, errors.New(errorString)
+		return responses.ResponseDataShowOrder{}, errors.New(errorString)
 	}
 
 	if errUm != nil {
-		return reponses.ResponseDataShowOrder{}, errUm
+		return responses.ResponseDataShowOrder{}, errUm
 	}
 
 	return responseData, nil
