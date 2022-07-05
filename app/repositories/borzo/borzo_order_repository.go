@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"go_base_project/app/repositories/borzo/models/order"
 	"go_base_project/app/repositories/borzo/models/reponses"
 	"go_base_project/app/services/borzo/base"
 	"io"
 )
 
 type BorzoOrderRepoInterface interface {
-	Order()
+	Order(data order.OrderData) (reponses.ResponseDataCreateOrder, error)
 	ShowOrder(orderID string) (reponses.ResponseDataShowOrder, error)
 	Price()
 	CancelOrder()
@@ -20,9 +21,41 @@ type BorzoOrderRepoInterface interface {
 type BorzoOrderRepository struct {
 }
 
-func (repo BorzoOrderRepository) Order() {
-	//TODO implement me
-	panic("implement me")
+func (repo BorzoOrderRepository) Order(data order.OrderData) (reponses.ResponseDataCreateOrder, error) {
+	//
+	//var myMap map[string]string
+	//cok, _ := json.Marshal(data)
+	//json.Unmarshal(cok, &myMap)
+	//
+	//fmt.Println("ini map", myMap["matter"])
+	//fmt.Println("ini cok", myMap["matter"])
+
+	call, err := base.BorzoApi{}.Post("api/business/1.1/create-order").Bodys(data).Call()
+
+	if err != nil {
+		return reponses.ResponseDataCreateOrder{}, err
+	}
+
+	result, errRa := io.ReadAll(call.Body)
+
+	if errRa != nil {
+		return reponses.ResponseDataCreateOrder{}, errRa
+	}
+
+	var responseDataCreateOrder reponses.ResponseDataCreateOrder
+
+	errUm := json.Unmarshal(result, &responseDataCreateOrder)
+
+	if responseDataCreateOrder.IsSuccessful != true {
+		errorString := bytes.NewBuffer(result).String()
+		return reponses.ResponseDataCreateOrder{}, errors.New(errorString)
+	}
+
+	if errUm != nil {
+		return reponses.ResponseDataCreateOrder{}, errUm
+	}
+
+	return responseDataCreateOrder, nil
 }
 
 func (repo BorzoOrderRepository) Price() {

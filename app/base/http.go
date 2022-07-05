@@ -3,6 +3,7 @@ package base
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -12,10 +13,11 @@ func HttpService() NetClient {
 }
 
 type NetClient struct {
-	url string
-	method string
-	data map[string]string
-	headers [] headers
+	url     string
+	method  string
+	data    map[string]string
+	headers []headers
+	body    interface{}
 }
 
 type headers struct {
@@ -62,6 +64,11 @@ func (c NetClient) Params(data map[string]string) NetClient {
 	return c
 }
 
+func (c NetClient) Bodys(data interface{}) NetClient {
+	c.body = data
+	return c
+}
+
 func (c NetClient) AddHeader(key string, value string) NetClient {
 	c.headers = append(c.headers, headers{
 		key:   key,
@@ -72,23 +79,29 @@ func (c NetClient) AddHeader(key string, value string) NetClient {
 
 func (c NetClient) Call() (*http.Response, error) {
 	jsonData, _ := json.Marshal(c.data)
-	println(c.method+" url :",c.url)
-	println("parameters :",string(jsonData))
+	println(c.method+" url :", c.url)
+	println("parameters :", string(jsonData))
 
 	var body io.Reader
+	fmt.Println(body)
+	var cek *bytes.Buffer = nil
 
 	switch c.method {
 	case http.MethodGet:
 		body = nil
 		break
 	case http.MethodPost:
+		cek = new(bytes.Buffer)
+		json.NewEncoder(cek).Encode(c.body)
+		fmt.Println("cookk", cek)
+
 	case http.MethodPut:
 	case http.MethodDelete:
 		body = bytes.NewBuffer(jsonData)
 		break
 	}
 
-	request, err := http.NewRequest(c.method, c.url, body)
+	request, err := http.NewRequest(c.method, c.url, cek)
 	for _, val := range c.headers {
 		request.Header.Add(val.key, val.value)
 	}
