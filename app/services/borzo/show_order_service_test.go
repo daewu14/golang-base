@@ -9,7 +9,7 @@ import (
 
 func TestShowOrderService_Do(t *testing.T) {
 	godotenv.Load("../../../.env")
-	service := ShowOrderService{"12504", borzo.BorzoOrderRepository{}}.Do()
+	service := ShowOrderService{"13492", borzo.BorzoOrderRepository{}}.Do()
 
 	fmt.Println("service result", service)
 }

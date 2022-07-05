@@ -3,7 +3,6 @@ package base
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -64,8 +63,8 @@ func (c NetClient) Params(data map[string]string) NetClient {
 	return c
 }
 
-func (c NetClient) Bodys(data interface{}) NetClient {
-	c.body = data
+func (c NetClient) Bodys(body interface{}) NetClient {
+	c.body = body
 	return c
 }
 
@@ -78,30 +77,28 @@ func (c NetClient) AddHeader(key string, value string) NetClient {
 }
 
 func (c NetClient) Call() (*http.Response, error) {
-	jsonData, _ := json.Marshal(c.data)
+	jsonData, _ := json.Marshal(c.body)
 	println(c.method+" url :", c.url)
 	println("parameters :", string(jsonData))
 
 	var body io.Reader
-	fmt.Println(body)
-	var cek *bytes.Buffer = nil
 
 	switch c.method {
 	case http.MethodGet:
 		body = nil
 		break
 	case http.MethodPost:
-		cek = new(bytes.Buffer)
-		json.NewEncoder(cek).Encode(c.body)
-		fmt.Println("cookk", cek)
-
+		body = bytes.NewBuffer(jsonData)
+		break
 	case http.MethodPut:
+		body = bytes.NewBuffer(jsonData)
+		break
 	case http.MethodDelete:
 		body = bytes.NewBuffer(jsonData)
 		break
 	}
 
-	request, err := http.NewRequest(c.method, c.url, cek)
+	request, err := http.NewRequest(c.method, c.url, body)
 	for _, val := range c.headers {
 		request.Header.Add(val.key, val.value)
 	}
