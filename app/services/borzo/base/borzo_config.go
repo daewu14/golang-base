@@ -14,5 +14,5 @@ func (config BorzoConfig) BaseUrl() string {
 }
 
 func (config BorzoConfig) AuthToken() string {
-	return "C5360B9A1595660CEABD1FFE53B31BF6A2822D48"
+	return os.Getenv("BORZO_AUTH_TOKEN")
 }

@@ -7,12 +7,13 @@ import (
 )
 
 type ShowOrderService struct {
-	Repo borzo.BorzoOrderRepoInterface
+	OrderID string
+	Repo    borzo.BorzoOrderRepoInterface
 }
 
 func (service ShowOrderService) Do() response.ServiceResponse {
 
-	data, err := service.Repo.ShowOrder("12504")
+	data, err := service.Repo.ShowOrder(service.OrderID)
 
 	if err != nil {
 		return response.Service().Error(err.Error(), nil)
