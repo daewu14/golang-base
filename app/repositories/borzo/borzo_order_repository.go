@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"go_base_project/app/repositories/borzo/models"
 	"go_base_project/app/repositories/borzo/models/order"
 	"go_base_project/app/repositories/borzo/models/price"
 	"go_base_project/app/repositories/borzo/models/responses"
@@ -15,7 +16,7 @@ type BorzoOrderRepoInterface interface {
 	Order(data order.OrderData) (responses.ResponseDataCreateOrder, error)
 	ShowOrder(orderID string) (responses.ResponseDataShowOrder, error)
 	Price(data price.DataPrice) (responses.ResponseDataPricing, error)
-	CancelOrder()
+	CancelOrder(orderID string) (responses.ResponseDataCancelOrder, error)
 	ListOrder()
 }
 
@@ -79,9 +80,33 @@ func (repo BorzoOrderRepository) Price(data price.DataPrice) (responses.Response
 
 }
 
-func (repo BorzoOrderRepository) CancelOrder() {
-	//TODO implement me
-	panic("implement me")
+func (repo BorzoOrderRepository) CancelOrder(orderID string) (responses.ResponseDataCancelOrder, error) {
+
+	var param models.CancelData
+	param.OrderID = orderID
+
+	call, err := base.BorzoApi{}.Post("api/business/1.1/cancel-order").Bodys(param).Call()
+	if err != nil {
+		return responses.ResponseDataCancelOrder{}, err
+	}
+
+	result, errRa := io.ReadAll(call.Body)
+	if errRa != nil {
+		return responses.ResponseDataCancelOrder{}, errRa
+	}
+
+	var responseDataCancelOrder responses.ResponseDataCancelOrder
+	errUm := json.Unmarshal(result, &responseDataCancelOrder)
+	if errUm != nil {
+		return responses.ResponseDataCancelOrder{}, errUm
+	}
+
+	if responseDataCancelOrder.IsSuccessful != true {
+		errorString := bytes.NewBuffer(result).String()
+		return responses.ResponseDataCancelOrder{}, errors.New(errorString)
+	}
+
+	return responseDataCancelOrder, nil
 }
 
 func (repo BorzoOrderRepository) ListOrder() {

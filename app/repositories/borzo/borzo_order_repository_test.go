@@ -71,3 +71,11 @@ func TestBorzoOrderRepository_Price(t *testing.T) {
 	fmt.Println("Amount : ", response.Order.PaymentAmount)
 	fmt.Println(response, err)
 }
+
+func TestBorzoOrderRepository_CancelOrder(t *testing.T) {
+	godotenv.Load("../../../.env")
+	result, err := BorzoOrderRepository{}.CancelOrder("13536")
+
+	fmt.Println("result", result)
+	fmt.Println("error", err)
+}
