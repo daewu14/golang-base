@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"go_base_project/app/repositories/gosend/models/booking"
+	"go_base_project/app/repositories/gosend/models/pricing"
 	"testing"
 )
 
@@ -43,4 +44,18 @@ func TestGosendRepository_Booking(t *testing.T) {
 
 	fmt.Println("TestGosendRepository_Booking result ", result.Id)
 	fmt.Println("TestGosendRepository_Booking error ", err)
+}
+
+func TestGosendRepository_Pricing(t *testing.T) {
+	godotenv.Load("../../../.env")
+
+	var pricingData pricing.PricingData
+
+	pricingData.Origin = "-6.2739117,106.8119382"
+	pricingData.Destination = "-6.2339117,106.8219382"
+
+	result, err := GosendRepository{}.Pricing(pricingData)
+
+	fmt.Println("TestGosendRepository_Pricing result", result)
+	fmt.Println("TestGosendRepository_Pricing error", err)
 }
