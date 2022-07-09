@@ -15,7 +15,7 @@ type GosendRepoInterface interface {
 	Booking(data booking.BookingData) (response.ResponseCreateBookingData, error)
 	Pricing(data pricing.PricingData) (response.ResponsePricingData, error)
 	CancelBooking()
-	StatusBooking()
+	StatusBooking(orderID string) (response.ResponseStatusBookingData, error)
 }
 
 type GosendRepository struct {
@@ -76,4 +76,27 @@ func (repo GosendRepository) Pricing(data pricing.PricingData) (response.Respons
 	}
 
 	return responsePricingData, nil
+}
+
+func (repo GosendRepository) StatusBooking(orderID string) (response.ResponseStatusBookingData, error) {
+	endpoint := "gokilat/v10/booking/orderno/" + orderID
+	call, err := base.GosendApi{}.Get(endpoint).Call()
+
+	if err != nil {
+		return response.ResponseStatusBookingData{}, err
+	}
+
+	result, errRa := io.ReadAll(call.Body)
+	if errRa != nil {
+		return response.ResponseStatusBookingData{}, errRa
+	}
+
+	var responseStatusBookingData response.ResponseStatusBookingData
+	errUm := json.Unmarshal(result, &responseStatusBookingData)
+	if errUm != nil {
+		return response.ResponseStatusBookingData{}, errUm
+	}
+
+	return responseStatusBookingData, nil
+
 }

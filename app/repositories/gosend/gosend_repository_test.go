@@ -59,3 +59,12 @@ func TestGosendRepository_Pricing(t *testing.T) {
 	fmt.Println("TestGosendRepository_Pricing result", result)
 	fmt.Println("TestGosendRepository_Pricing error", err)
 }
+
+func TestGosendRepository_StatusBooking(t *testing.T) {
+	godotenv.Load("../../../.env")
+
+	result, error := GosendRepository{}.StatusBooking("GK-11-1478050")
+
+	fmt.Println("TestGosendRepository_StatusBooking result ", result)
+	fmt.Println("TestGosendRepository_StatusBooking error ", error)
+}

@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type ResponseCreateBookingData struct {
 	Id             int         `json:"id"`
 	OrderNo        string      `json:"orderNo"`
@@ -54,4 +56,41 @@ type ResponsePricingData struct {
 			GoPayTotalPriceWithVoucher int         `json:"go_pay_total_price_with_voucher"`
 		} `json:"price"`
 	} `json:"SameDay"`
+}
+
+type ResponseStatusBookingData struct {
+	ID                  int         `json:"id"`
+	OrderNo             string      `json:"orderNo"`
+	Status              string      `json:"status"`
+	DriverID            interface{} `json:"driverId"`
+	DriverName          interface{} `json:"driverName"`
+	DriverPhone         interface{} `json:"driverPhone"`
+	DriverPhoto         interface{} `json:"driverPhoto"`
+	VehicleNumber       interface{} `json:"vehicleNumber"`
+	TotalDiscount       int         `json:"totalDiscount"`
+	TotalPrice          int         `json:"totalPrice"`
+	ReceiverName        interface{} `json:"receiverName"`
+	OrderCreatedTime    time.Time   `json:"orderCreatedTime"`
+	OrderDispatchTime   interface{} `json:"orderDispatchTime"`
+	OrderArrivalTime    interface{} `json:"orderArrivalTime"`
+	OrderClosedTime     interface{} `json:"orderClosedTime"`
+	SellerAddressName   string      `json:"sellerAddressName"`
+	SellerAddressDetail string      `json:"sellerAddressDetail"`
+	BuyerAddressName    string      `json:"buyerAddressName"`
+	BuyerAddressDetail  string      `json:"buyerAddressDetail"`
+	BookingType         string      `json:"bookingType"`
+	CancelDescription   interface{} `json:"cancelDescription"`
+	StoreOrderID        string      `json:"storeOrderId"`
+	LiveTrackingURL     string      `json:"liveTrackingUrl"`
+	InsuranceDetails    struct {
+		Applied            string `json:"applied"`
+		Fee                string `json:"fee"`
+		ProductDescription string `json:"product_description"`
+		ProductPrice       string `json:"product_price"`
+	} `json:"insuranceDetails"`
+	Proofs struct {
+		Pop interface{} `json:"pop"`
+		Pod interface{} `json:"pod"`
+	} `json:"proofs"`
+	BookingStatus string `json:"bookingStatus"`
 }
