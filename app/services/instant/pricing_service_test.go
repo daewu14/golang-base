@@ -8,7 +8,10 @@ import (
 )
 
 func TestPricingService_Do(t *testing.T) {
-	godotenv.Load("../../../.env")
+	err := godotenv.Load("../../../.env")
+	if err != nil {
+		return
+	}
 
 	var data dto.PricingDTO
 	data.Origin.Lat = -6.3036354

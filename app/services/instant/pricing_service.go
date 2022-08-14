@@ -1,13 +1,14 @@
 package instant
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"go_base_project/app/models/incoming_request/instant_service/dto"
 	borzo2 "go_base_project/app/repositories/borzo"
 	"go_base_project/app/repositories/borzo/models/price"
 	"go_base_project/app/repositories/borzo/models/responses"
 	"go_base_project/app/repositories/gosend/models/pricing"
+	response2 "go_base_project/app/repositories/gosend/models/response"
 	"go_base_project/app/response"
 	"go_base_project/app/services/borzo"
 	"go_base_project/app/services/gosend"
@@ -22,20 +23,21 @@ func (service PricingService) Do() response.ServiceResponse {
 	/*
 		- Borzo process
 	*/
-	channel := make(chan responses.ResponseDataPricing)
+	borzoChannel := make(chan responses.ResponseDataPricing)
 
 	borzoPricingData := contructBorzoPricingData(service.data)
-	getBorzoResponse(channel, borzoPricingData)
-	fmt.Println("borzo pricing result")
+	go getBorzoResponse(borzoChannel, borzoPricingData)
 
 	/*
 		- Gosend process
 	*/
+	gosendChannel := make(chan response2.ResponsePricingData)
+
 	gosendPricingData := constructGosendPricingData(service.data)
+	go getGosendResponse(gosendChannel, gosendPricingData)
 
-	gosendPricingResult := gosend.GosendPricingService{gosendPricingData}.Do()
-
-	fmt.Println("gosend pricing result", gosendPricingResult)
+	fmt.Println("gosend channel result ", <-gosendChannel)
+	fmt.Println("borzo channel result ", <-borzoChannel)
 
 	return response.Service().Success("ok", nil)
 }
@@ -72,12 +74,40 @@ func constructGosendPricingData(data dto.PricingDTO) pricing.PricingData {
 	return pricingData
 }
 
-func getBorzoResponse(jancok chan responses.ResponseDataPricing, dataPrice price.DataPrice) {
-	fmt.Println("cok", dataPrice.Type)
+func getBorzoResponse(response chan responses.ResponseDataPricing, dataPrice price.DataPrice) {
+
+	var responseDataPricing responses.ResponseDataPricing
 	result := borzo.PricingService{dataPrice, borzo2.BorzoOrderRepository{}}.Do()
 
-	var pricingResponse responses.ResponseDataPricing
-	pricingResponse, _ = json.Marshal(result.Data, &pricingResponse)
-	// sampi disini
-	fmt.Println("resultnya", result.Data)
+	errMap := mapstructure.Decode(result.Data, &responseDataPricing)
+	if errMap != nil {
+		println("something went wrong ! ", errMap.Error())
+		return
+	}
+
+	response <- responseDataPricing
+
+	return
+}
+
+func getGosendResponse(response chan response2.ResponsePricingData, data pricing.PricingData) {
+
+	var responseDataPricing response2.ResponsePricingData
+	gosendPricingResult := gosend.GosendPricingService{Data: data}.Do()
+
+	if gosendPricingResult.Status != true {
+		println("something went wrong !")
+		response <- responseDataPricing
+		return
+	}
+
+	errMap := mapstructure.Decode(gosendPricingResult.Data, &responseDataPricing)
+	if errMap != nil {
+		println("something went wrong ! ", errMap.Error())
+		response <- responseDataPricing
+		return
+	}
+
+	response <- responseDataPricing
+	return
 }
