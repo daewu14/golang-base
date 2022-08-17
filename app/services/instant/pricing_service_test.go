@@ -25,8 +25,12 @@ func TestPricingService_Do(t *testing.T) {
 	service := []string{"gosend"}
 	data.Service = service
 
-	result := PricingService{data: data}.Do()
+	result := PricingService{Data: data}.Do()
 
 	fmt.Println("result", result)
 
+}
+
+func TestOkeTest(t *testing.T) {
+	println("okee")
 }

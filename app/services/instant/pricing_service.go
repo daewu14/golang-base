@@ -12,10 +12,11 @@ import (
 	"go_base_project/app/response"
 	"go_base_project/app/services/borzo"
 	"go_base_project/app/services/gosend"
+	"time"
 )
 
 type PricingService struct {
-	data dto.PricingDTO
+	Data dto.PricingDTO
 }
 
 func (service PricingService) Do() response.ServiceResponse {
@@ -25,7 +26,7 @@ func (service PricingService) Do() response.ServiceResponse {
 	*/
 	borzoChannel := make(chan responses.ResponseDataPricing)
 
-	borzoPricingData := contructBorzoPricingData(service.data)
+	borzoPricingData := contructBorzoPricingData(service.Data)
 	go getBorzoResponse(borzoChannel, borzoPricingData)
 
 	/*
@@ -33,13 +34,16 @@ func (service PricingService) Do() response.ServiceResponse {
 	*/
 	gosendChannel := make(chan response2.ResponsePricingData)
 
-	gosendPricingData := constructGosendPricingData(service.data)
+	gosendPricingData := constructGosendPricingData(service.Data)
 	go getGosendResponse(gosendChannel, gosendPricingData)
 
 	fmt.Println("gosend channel result ", <-gosendChannel)
 	fmt.Println("borzo channel result ", <-borzoChannel)
 
-	return response.Service().Success("ok", nil)
+	close(gosendChannel)
+	close(borzoChannel)
+	time.Sleep(time.Second)
+	return response.Service().Success("ok", <-borzoChannel)
 }
 
 func contructBorzoPricingData(data dto.PricingDTO) price.DataPrice {
