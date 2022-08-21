@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"go_base_project/app/models/incoming_request/instant_service/dto"
+	pricing2 "go_base_project/app/models/instant/dto/response/pricing"
 	borzo2 "go_base_project/app/repositories/borzo"
 	"go_base_project/app/repositories/borzo/models/price"
 	"go_base_project/app/repositories/borzo/models/responses"
@@ -12,6 +13,7 @@ import (
 	"go_base_project/app/response"
 	"go_base_project/app/services/borzo"
 	"go_base_project/app/services/gosend"
+	"strconv"
 )
 
 type PricingService struct {
@@ -40,7 +42,20 @@ func (service PricingService) Do() response.ServiceResponse {
 		close(gosendChannel)
 	}()
 
-	return response.Service().Success("ok", <-gosendChannel)
+	// defined cost for response
+	var costs []pricing2.Costs
+
+	golangConstructedData, err := constructPricingData(<-gosendChannel, "gosend", costs)
+	if err != nil {
+		return response.Service().Error(err.Error(), nil)
+	}
+
+	borzoConstructedData, err := constructPricingData(<-borzoChannel, "borzo", golangConstructedData)
+	if err != nil {
+		return response.Service().Error(err.Error(), nil)
+	}
+
+	return response.Service().Success("ok", borzoConstructedData)
 }
 
 func contructBorzoPricingData(data dto.PricingDTO) price.DataPrice {
@@ -111,4 +126,49 @@ func getGosendResponse(response chan response2.ResponsePricingData, data pricing
 
 	response <- responseDataPricing
 	return
+}
+
+func constructPricingData(data interface{}, service string, cost []pricing2.Costs) ([]pricing2.Costs, error) {
+
+	// defined temp data for cost
+	var tempCost pricing2.Costs
+
+	switch service {
+	case "gosend":
+
+		// mapping interface to gosend response pricing data
+		var responsePricingData response2.ResponsePricingData
+		err := mapstructure.Decode(data, &responsePricingData)
+		if err != nil {
+			return cost, err
+		}
+
+		//instant data
+		tempCost.Price.TotalPrice = responsePricingData.Instant.Price.TotalPrice
+		tempCost.Service = "gosend"
+		tempCost.ServiceType = "instant"
+		tempCost.Eta = responsePricingData.Instant.ShipmentMethodDescription
+		cost = append(cost, tempCost)
+
+		// sameday data
+		tempCost.Price.TotalPrice = responsePricingData.SameDay.Price.TotalPrice
+		tempCost.Service = "gosend"
+		tempCost.ServiceType = "sameday"
+		tempCost.Eta = responsePricingData.SameDay.ShipmentMethodDescription
+		cost = append(cost, tempCost)
+
+	case "borzo":
+		// mapping interface to borzo response pricing data
+		var responseDataPricing responses.ResponseDataPricing
+		err := mapstructure.Decode(data, &responseDataPricing)
+		if err != nil {
+			return cost, err
+		}
+		tempCost.Price.TotalPrice, _ = strconv.Atoi(responseDataPricing.Order.PaymentAmount)
+		tempCost.Service = "borzo"
+		tempCost.ServiceType = "sameday"
+		cost = append(cost, tempCost)
+	}
+
+	return cost, nil
 }

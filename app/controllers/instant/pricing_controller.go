@@ -55,5 +55,6 @@ func (c PricingController) Index(ctx *gin.Context) {
 	data.ItemPrice = pricingDTO.ItemPrice
 
 	result := instant.PricingService{Data: data}.Do()
+
 	ctx.JSON(http.StatusOK, response.Api().Success("OK", result.Data))
 }
