@@ -3,22 +3,15 @@ module go_base_project
 go 1.18
 
 require (
-<<<<<<< HEAD
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.8.1 // indirect
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible // indirect
-=======
 	github.com/gin-gonic/gin v1.8.1
 	github.com/golang/mock v1.6.0
 	github.com/joho/godotenv v1.4.0
 	gorm.io/driver/mysql v1.3.4
 	gorm.io/gorm v1.23.7
-)
-
-require (
-	github.com/gin-contrib/sse v0.1.0 // indirect
->>>>>>> a4efa574566b9b99d42bc7bf604cf0f4ca5486af
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
