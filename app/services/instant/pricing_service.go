@@ -3,7 +3,6 @@ package instant
 import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
-	log "github.com/sirupsen/logrus"
 	"go_base_project/app/models/incoming_request/instant_service/dto"
 	pricing2 "go_base_project/app/models/instant/dto/response/pricing"
 	borzo2 "go_base_project/app/repositories/borzo"
@@ -11,9 +10,13 @@ import (
 	"go_base_project/app/repositories/borzo/models/responses"
 	"go_base_project/app/repositories/gosend/models/pricing"
 	response2 "go_base_project/app/repositories/gosend/models/response"
+	grab2 "go_base_project/app/repositories/grab"
+	pricing3 "go_base_project/app/repositories/grab/models/request/pricing"
+	response3 "go_base_project/app/repositories/grab/models/response"
 	"go_base_project/app/response"
 	"go_base_project/app/services/borzo"
 	"go_base_project/app/services/gosend"
+	"go_base_project/app/services/grab"
 	"strconv"
 	"strings"
 )
@@ -59,6 +62,23 @@ func (service PricingService) Do() response.ServiceResponse {
 		costs, _ = constructPricingData(<-gosendChannel, "gosend", costs)
 	}
 
+	/*
+		- grab process
+	*/
+	grabExist := contains(service.Data.Service, "grab")
+	if grabExist == true {
+
+		grabChannel := make(chan response3.PricingResponse)
+		grabPricingData := constructGrabPricingData(service.Data)
+		go func() {
+			getGrabResponse(grabChannel, grabPricingData)
+			close(grabChannel)
+		}()
+
+		costs, _ = constructPricingData(<-grabChannel, "grab", costs)
+
+	}
+
 	return response.Service().Success("ok", costs)
 }
 
@@ -90,6 +110,29 @@ func constructGosendPricingData(data dto.PricingDTO) pricing.PricingData {
 
 	pricingData.Origin = fmt.Sprintf("%f", data.Origin.Lat) + "," + fmt.Sprintf("%f", data.Origin.Long)
 	pricingData.Destination = fmt.Sprintf("%f", data.Destination.Lat) + "," + fmt.Sprintf("%f", data.Destination.Long)
+
+	return pricingData
+}
+
+func constructGrabPricingData(data dto.PricingDTO) pricing3.PricingRequest {
+
+	var pcg pricing3.Package
+	pcg.Name = "goods"
+	pcg.Quantity = 1
+	pcg.Description = "some description"
+	pcg.Dimensions.Width = 0
+	pcg.Dimensions.Height = 0
+	pcg.Dimensions.Depth = 0
+	pcg.Dimensions.Weight = data.Weight
+
+	var pricingData pricing3.PricingRequest
+	pricingData.Origin.Coordinates.Latitude = data.Origin.Lat
+	pricingData.Origin.Coordinates.Longitude = data.Origin.Long
+	pricingData.Origin.Address = data.Origin.Address
+	pricingData.Destination.Coordinates.Latitude = data.Destination.Lat
+	pricingData.Destination.Coordinates.Longitude = data.Destination.Long
+	pricingData.Destination.Address = data.Destination.Address
+	pricingData.Packages = append(pricingData.Packages, pcg)
 
 	return pricingData
 }
@@ -129,6 +172,31 @@ func getGosendResponse(response chan response2.ResponsePricingData, data pricing
 	}
 
 	response <- responseDataPricing
+	return
+}
+
+func getGrabResponse(response chan response3.PricingResponse, data pricing3.PricingRequest) {
+
+	var grabPricingResponse response3.PricingResponse
+
+	grabPricingService := grab.PricingService{
+		Data: data,
+		Repo: grab2.GrabRepository{},
+	}.Do()
+
+	if !grabPricingService.Status {
+		println("something went wrong ! ", grabPricingService.Message)
+		response <- grabPricingResponse
+		return
+	}
+
+	if errMap := mapstructure.Decode(grabPricingService.Data, &grabPricingResponse); errMap != nil {
+		println("something went wrong ! ", grabPricingService.Message)
+		response <- grabPricingResponse
+		return
+	}
+
+	response <- grabPricingResponse
 	return
 }
 
@@ -175,9 +243,35 @@ func constructPricingData(data interface{}, service string, cost []pricing2.Cost
 		tempCost.ServiceType = "sameday"
 		cost = append(cost, tempCost)
 
-		log.WithFields(log.Fields{
-			"response": cost,
-		}).Info("SIPALING LOG")
+	case "grab":
+
+		// mapping interface to grab response pricing data
+		var grabPricingResponse response3.PricingResponse
+		if err := mapstructure.Decode(data, &grabPricingResponse); err != nil {
+			println("something went wrong ! ", err.Error())
+			return cost, err
+		}
+
+		for _, data := range grabPricingResponse.Quotes {
+
+			// service pricing
+			if data.Service.Type == "INSTANT" {
+				tempCost.Price.TotalPrice = data.Amount
+				tempCost.Service = "grab"
+				tempCost.ServiceType = "instant"
+				tempCost.Eta = "-"
+				cost = append(cost, tempCost)
+			}
+
+			if data.Service.Type == "SAME_DAY" {
+				tempCost.Price.TotalPrice = data.Amount
+				tempCost.Service = "grab"
+				tempCost.ServiceType = "sameday"
+				tempCost.Eta = "-"
+				cost = append(cost, tempCost)
+			}
+
+		}
 
 	}
 

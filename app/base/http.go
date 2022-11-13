@@ -3,6 +3,7 @@ package base
 import (
 	"bytes"
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 )
@@ -115,5 +116,14 @@ func (c NetClient) Call() (*http.Response, error) {
 		return &http.Response{}, err
 	}
 	client := http.Client{}
+
+	log.Info("TRYING TO HIT ENDPOINT")
+	log.WithFields(log.Fields{
+		"URL ":     c.url,
+		"METHOD ":  c.method,
+		"HEADERS ": request.Header,
+		"BODY ":    body,
+	}).Info("HITTING ENDPOINT")
+
 	return client.Do(request)
 }
