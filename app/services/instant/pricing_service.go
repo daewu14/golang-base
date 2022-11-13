@@ -3,6 +3,7 @@ package instant
 import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
+	log "github.com/sirupsen/logrus"
 	"go_base_project/app/models/incoming_request/instant_service/dto"
 	pricing2 "go_base_project/app/models/instant/dto/response/pricing"
 	borzo2 "go_base_project/app/repositories/borzo"
@@ -14,6 +15,7 @@ import (
 	"go_base_project/app/services/borzo"
 	"go_base_project/app/services/gosend"
 	"strconv"
+	"strings"
 )
 
 type PricingService struct {
@@ -22,40 +24,42 @@ type PricingService struct {
 
 func (service PricingService) Do() response.ServiceResponse {
 
+	// defined cost for response
+	var costs []pricing2.Costs
+
 	/*
 		- Borzo process
 	*/
-	borzoChannel := make(chan responses.ResponseDataPricing)
-	borzoPricingData := contructBorzoPricingData(service.Data)
-	go func() {
-		getBorzoResponse(borzoChannel, borzoPricingData)
-		close(borzoChannel)
-	}()
+	borzoExist := contains(service.Data.Service, "borzo")
+	if borzoExist == true {
+		borzoChannel := make(chan responses.ResponseDataPricing)
+		borzoPricingData := contructBorzoPricingData(service.Data)
+		go func() {
+			getBorzoResponse(borzoChannel, borzoPricingData)
+			close(borzoChannel)
+		}()
+
+		costs, _ = constructPricingData(<-borzoChannel, "borzo", costs)
+
+	}
 
 	/*
 		- Gosend process
 	*/
-	gosendChannel := make(chan response2.ResponsePricingData)
-	gosendPricingData := constructGosendPricingData(service.Data)
-	go func() {
-		getGosendResponse(gosendChannel, gosendPricingData)
-		close(gosendChannel)
-	}()
+	gosendExist := contains(service.Data.Service, "gosend")
+	if gosendExist == true {
 
-	// defined cost for response
-	var costs []pricing2.Costs
+		gosendChannel := make(chan response2.ResponsePricingData)
+		gosendPricingData := constructGosendPricingData(service.Data)
+		go func() {
+			getGosendResponse(gosendChannel, gosendPricingData)
+			close(gosendChannel)
+		}()
 
-	golangConstructedData, err := constructPricingData(<-gosendChannel, "gosend", costs)
-	if err != nil {
-		return response.Service().Error(err.Error(), nil)
+		costs, _ = constructPricingData(<-gosendChannel, "gosend", costs)
 	}
 
-	borzoConstructedData, err := constructPricingData(<-borzoChannel, "borzo", golangConstructedData)
-	if err != nil {
-		return response.Service().Error(err.Error(), nil)
-	}
-
-	return response.Service().Success("ok", borzoConstructedData)
+	return response.Service().Success("ok", costs)
 }
 
 func contructBorzoPricingData(data dto.PricingDTO) price.DataPrice {
@@ -164,11 +168,28 @@ func constructPricingData(data interface{}, service string, cost []pricing2.Cost
 		if err != nil {
 			return cost, err
 		}
-		tempCost.Price.TotalPrice, _ = strconv.Atoi(responseDataPricing.Order.PaymentAmount)
+
+		separatedAmount := strings.Split(responseDataPricing.Order.PaymentAmount, ".")
+		tempCost.Price.TotalPrice, _ = strconv.Atoi(separatedAmount[0])
 		tempCost.Service = "borzo"
 		tempCost.ServiceType = "sameday"
 		cost = append(cost, tempCost)
+
+		log.WithFields(log.Fields{
+			"response": cost,
+		}).Info("SIPALING LOG")
+
 	}
 
 	return cost, nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

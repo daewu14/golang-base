@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"go_base_project/app/repositories/borzo/models"
 	"go_base_project/app/repositories/borzo/models/order"
 	"go_base_project/app/repositories/borzo/models/price"
@@ -75,6 +76,10 @@ func (repo BorzoOrderRepository) Price(data price.DataPrice) (responses.Response
 	if errUm != nil {
 		return responses.ResponseDataPricing{}, errUm
 	}
+
+	log.WithFields(log.Fields{
+		"response": responseDataPricing,
+	}).Info("BORZO : PRICING RESPONSE")
 
 	return responseDataPricing, nil
 

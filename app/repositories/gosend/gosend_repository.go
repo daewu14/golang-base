@@ -3,6 +3,7 @@ package gosend
 import (
 	"encoding/json"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"go_base_project/app/repositories/gosend/models/booking"
 	"go_base_project/app/repositories/gosend/models/pricing"
 	"go_base_project/app/repositories/gosend/models/response"
@@ -74,6 +75,10 @@ func (repo GosendRepository) Pricing(data pricing.PricingData) (response.Respons
 	if errUm != nil {
 		return response.ResponsePricingData{}, errUm
 	}
+
+	log.WithFields(log.Fields{
+		"response": responsePricingData,
+	}).Info("GOSEND : PRICING RESPONSE")
 
 	return responsePricingData, nil
 }
